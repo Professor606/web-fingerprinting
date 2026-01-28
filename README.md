@@ -68,8 +68,8 @@ This multi-hash approach allows websites to still identify users even when they 
 
 1. Clone this repository
 ```bash
-git clone https://github.com/professor606/user-fingerprint.git
-cd user-fingerprint
+git clone https://github.com/Professor606/web-fingerprinting.git
+cd web-fingerprinting
 touch .env
 ```
 
