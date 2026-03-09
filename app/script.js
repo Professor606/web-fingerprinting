@@ -1,6 +1,6 @@
 function sha256(obj) {
   const str = JSON.stringify(obj);
-  
+
   function utf8Encode(str) {
     return unescape(encodeURIComponent(str));
   }
@@ -28,28 +28,28 @@ function sha256(obj) {
   const msg = utf8Encode(str);
   const msgLen = msg.length;
   const bitLen = msgLen * 8;
-  
+
   const paddedLen = Math.ceil((msgLen + 9) / 64) * 64;
   const padded = new Uint8Array(paddedLen);
-  
+
   for (let i = 0; i < msgLen; i++) {
     padded[i] = msg.charCodeAt(i);
   }
 
   padded[msgLen] = 0x80;
-  
+
   for (let i = 0; i < 8; i++) {
     padded[paddedLen - 1 - i] = (bitLen >>> (i * 8)) & 0xff;
   }
-  
+
   for (let offset = 0; offset < paddedLen; offset += 64) {
     const W = new Array(64);
-    
+
     for (let i = 0; i < 16; i++) {
       W[i] = (padded[offset + i * 4] << 24) |
-             (padded[offset + i * 4 + 1] << 16) |
-             (padded[offset + i * 4 + 2] << 8) |
-             (padded[offset + i * 4 + 3]);
+        (padded[offset + i * 4 + 1] << 16) |
+        (padded[offset + i * 4 + 2] << 8) |
+        (padded[offset + i * 4 + 3]);
     }
 
     for (let i = 16; i < 64; i++) {
@@ -59,7 +59,7 @@ function sha256(obj) {
     }
 
     let [a, b, c, d, e, f, g, h] = H;
-    
+
     for (let i = 0; i < 64; i++) {
       const S1 = rotr(6, e) ^ rotr(11, e) ^ rotr(25, e);
       const ch = (e & f) ^ (~e & g);
@@ -67,7 +67,7 @@ function sha256(obj) {
       const S0 = rotr(2, a) ^ rotr(13, a) ^ rotr(22, a);
       const maj = (a & b) ^ (a & c) ^ (b & c);
       const temp2 = (S0 + maj) | 0;
-    
+
       h = g;
       g = f;
       f = e;
@@ -87,9 +87,333 @@ function sha256(obj) {
     H[6] = (H[6] + g) | 0;
     H[7] = (H[7] + h) | 0;
   }
-  
+
   return H.map(h => ('00000000' + (h >>> 0).toString(16)).slice(-8)).join('');
 }
+
+// ─── Advanced Fingerprinting Techniques ───────────────────────────────────────
+
+/**
+ * Canvas Fingerprinting
+ * Renders text and shapes on a hidden canvas. Different GPUs, OS, and font
+ * renderers produce subtly different pixel output, making this highly unique.
+ */
+function getCanvasFingerprint() {
+  try {
+    const canvas = document.createElement('canvas');
+    canvas.width = 280;
+    canvas.height = 60;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return { canvasHash: 'unsupported' };
+
+    // Draw a complex scene that varies across renderers
+    ctx.fillStyle = '#f60';
+    ctx.fillRect(100, 1, 62, 20);
+
+    ctx.fillStyle = '#069';
+    ctx.font = '14px Arial, sans-serif';
+    ctx.fillText('Fingerprint 🖐️', 2, 15);
+
+    ctx.fillStyle = 'rgba(102, 204, 0, 0.7)';
+    ctx.font = '18px Times New Roman, serif';
+    ctx.fillText('Canvas Test!', 4, 45);
+
+    // Draw arcs and gradients — these vary with anti-aliasing implementations
+    ctx.beginPath();
+    ctx.arc(200, 30, 20, 0, Math.PI * 2);
+    const gradient = ctx.createLinearGradient(180, 10, 220, 50);
+    gradient.addColorStop(0, '#ff0000');
+    gradient.addColorStop(0.5, '#00ff00');
+    gradient.addColorStop(1, '#0000ff');
+    ctx.fillStyle = gradient;
+    ctx.fill();
+
+    // Blend mode test
+    ctx.globalCompositeOperation = 'multiply';
+    ctx.fillStyle = 'rgb(255, 0, 255)';
+    ctx.fillRect(130, 10, 50, 40);
+
+    const dataUrl = canvas.toDataURL('image/png');
+    return { canvasDataUrl: dataUrl };
+  } catch (e) {
+    return { canvasHash: 'error' };
+  }
+}
+
+/**
+ * WebGL Fingerprinting
+ * Extracts GPU vendor, renderer, supported extensions, and rendering parameters.
+ * The combination is highly unique per hardware + driver combination.
+ */
+function getWebGLFingerprint() {
+  try {
+    const canvas = document.createElement('canvas');
+    const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+    if (!gl) return { webgl: 'unsupported' };
+
+    const result = {};
+
+    // GPU info via debug extension
+    const debugInfo = gl.getExtension('WEBGL_debug_renderer_info');
+    if (debugInfo) {
+      result.vendor = gl.getParameter(debugInfo.UNMASKED_VENDOR_WEBGL);
+      result.renderer = gl.getParameter(debugInfo.UNMASKED_RENDERER_WEBGL);
+    }
+
+    // Rendering parameters
+    result.version = gl.getParameter(gl.VERSION);
+    result.shadingLanguageVersion = gl.getParameter(gl.SHADING_LANGUAGE_VERSION);
+    result.maxTextureSize = gl.getParameter(gl.MAX_TEXTURE_SIZE);
+    result.maxCubeMapTextureSize = gl.getParameter(gl.MAX_CUBE_MAP_TEXTURE_SIZE);
+    result.maxRenderBufferSize = gl.getParameter(gl.MAX_RENDERBUFFER_SIZE);
+    result.maxViewportDims = Array.from(gl.getParameter(gl.MAX_VIEWPORT_DIMS));
+    result.maxVertexAttribs = gl.getParameter(gl.MAX_VERTEX_ATTRIBS);
+    result.maxVertexUniformVectors = gl.getParameter(gl.MAX_VERTEX_UNIFORM_VECTORS);
+    result.maxFragmentUniformVectors = gl.getParameter(gl.MAX_FRAGMENT_UNIFORM_VECTORS);
+    result.maxVaryingVectors = gl.getParameter(gl.MAX_VARYING_VECTORS);
+    result.aliasedLineWidthRange = Array.from(gl.getParameter(gl.ALIASED_LINE_WIDTH_RANGE));
+    result.aliasedPointSizeRange = Array.from(gl.getParameter(gl.ALIASED_POINT_SIZE_RANGE));
+    result.maxTextureImageUnits = gl.getParameter(gl.MAX_TEXTURE_IMAGE_UNITS);
+    result.maxCombinedTextureImageUnits = gl.getParameter(gl.MAX_COMBINED_TEXTURE_IMAGE_UNITS);
+
+    // Supported extensions
+    result.extensions = gl.getSupportedExtensions() || [];
+
+    // Precision formats
+    const precisions = {};
+    for (const shaderType of [gl.VERTEX_SHADER, gl.FRAGMENT_SHADER]) {
+      const label = shaderType === gl.VERTEX_SHADER ? 'vertex' : 'fragment';
+      precisions[label] = {};
+      for (const precisionType of [gl.LOW_FLOAT, gl.MEDIUM_FLOAT, gl.HIGH_FLOAT, gl.LOW_INT, gl.MEDIUM_INT, gl.HIGH_INT]) {
+        const format = gl.getShaderPrecisionFormat(shaderType, precisionType);
+        if (format) {
+          precisions[label][precisionType] = {
+            rangeMin: format.rangeMin,
+            rangeMax: format.rangeMax,
+            precision: format.precision
+          };
+        }
+      }
+    }
+    result.precisions = precisions;
+
+    return result;
+  } catch (e) {
+    return { webgl: 'error' };
+  }
+}
+
+/**
+ * AudioContext Fingerprinting
+ * Runs an oscillator through a compressor in an offline audio context.
+ * The rendered audio samples vary subtly across audio stacks and hardware.
+ */
+function getAudioFingerprint() {
+  return new Promise((resolve) => {
+    try {
+      const OfflineCtx = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+      if (!OfflineCtx) {
+        resolve({ audio: 'unsupported' });
+        return;
+      }
+
+      const context = new OfflineCtx(1, 44100, 44100); // 1 second of audio
+
+      // Create oscillator
+      const oscillator = context.createOscillator();
+      oscillator.type = 'triangle';
+      oscillator.frequency.setValueAtTime(10000, context.currentTime);
+
+      // Create compressor to add processing variance
+      const compressor = context.createDynamicsCompressor();
+      compressor.threshold.setValueAtTime(-50, context.currentTime);
+      compressor.knee.setValueAtTime(40, context.currentTime);
+      compressor.ratio.setValueAtTime(12, context.currentTime);
+      compressor.attack.setValueAtTime(0, context.currentTime);
+      compressor.release.setValueAtTime(0.25, context.currentTime);
+
+      oscillator.connect(compressor);
+      compressor.connect(context.destination);
+
+      oscillator.start(0);
+
+      context.startRendering().then((buffer) => {
+        const data = buffer.getChannelData(0);
+        // Sample a subset of the audio data for fingerprinting
+        const samples = [];
+        for (let i = 4500; i < 5000; i++) {
+          samples.push(data[i]);
+        }
+        // Sum for a quick numeric fingerprint
+        const sum = samples.reduce((acc, val) => acc + Math.abs(val), 0);
+        resolve({
+          audioSampleSum: sum,
+          audioSampleCount: samples.length,
+          audioSample: samples.slice(0, 10).map(s => s.toFixed(10))
+        });
+      }).catch(() => {
+        resolve({ audio: 'error' });
+      });
+
+      // Timeout fallback
+      setTimeout(() => resolve({ audio: 'timeout' }), 3000);
+    } catch (e) {
+      resolve({ audio: 'error' });
+    }
+  });
+}
+
+/**
+ * Font Enumeration Fingerprinting
+ * Measures rendered text width for a list of fonts against baseline fallbacks.
+ * If the width differs from the fallback, the font is installed.
+ * The set of installed fonts is highly unique.
+ */
+function getFontsFingerprint() {
+  try {
+    const baseFonts = ['monospace', 'sans-serif', 'serif'];
+    const testString = 'mmmmmmmmmmlli1|';
+    const testSize = '72px';
+
+    const span = document.createElement('span');
+    span.style.position = 'absolute';
+    span.style.left = '-9999px';
+    span.style.top = '-9999px';
+    span.style.fontSize = testSize;
+    span.style.lineHeight = 'normal';
+    span.textContent = testString;
+    document.body.appendChild(span);
+
+    // Measure baseline widths
+    const baselineWidths = {};
+    for (const base of baseFonts) {
+      span.style.fontFamily = base;
+      baselineWidths[base] = span.offsetWidth;
+    }
+
+    const fontsToTest = [
+      'Arial', 'Arial Black', 'Arial Narrow', 'Calibri', 'Cambria',
+      'Century Gothic', 'Comic Sans MS', 'Consolas', 'Courier', 'Courier New',
+      'Georgia', 'Geneva', 'Helvetica', 'Helvetica Neue', 'Impact',
+      'Lucida Console', 'Lucida Grande', 'Lucida Sans Unicode',
+      'Microsoft Sans Serif', 'Monaco', 'Monospace', 'Palatino', 'Palatino Linotype',
+      'Segoe UI', 'Tahoma', 'Times', 'Times New Roman', 'Trebuchet MS',
+      'Verdana', 'Wingdings',
+      // Less common fonts — more discriminating
+      'Abadi MT', 'Agency FB', 'Antiqua', 'Avenir', 'Baskerville',
+      'Big Caslon', 'Bodoni MT', 'Book Antiqua', 'Bookman Old Style',
+      'Candara', 'Century Schoolbook', 'Copperplate', 'Didot',
+      'Franklin Gothic Medium', 'Futura', 'Garamond', 'Gill Sans',
+      'Goudy Old Style', 'Haettenschweiler', 'Harlow Solid Italic',
+      'Hoefler Text', 'Jokerman', 'Lato', 'Lucida Bright',
+      'MS Gothic', 'MS PGothic', 'MS Reference Sans Serif',
+      'Noto Sans', 'hack', 'Open Sans', 'Optima', 'Roboto', 'Rockwell',
+      'San Francisco', 'Ubuntu'
+    ];
+
+    const detectedFonts = [];
+    for (const font of fontsToTest) {
+      let detected = false;
+      for (const base of baseFonts) {
+        span.style.fontFamily = `'${font}', ${base}`;
+        if (span.offsetWidth !== baselineWidths[base]) {
+          detected = true;
+          break;
+        }
+      }
+      if (detected) detectedFonts.push(font);
+    }
+
+    document.body.removeChild(span);
+
+    return {
+      detectedFonts,
+      fontCount: detectedFonts.length
+    };
+  } catch (e) {
+    return { fonts: 'error' };
+  }
+}
+
+/**
+ * WebRTC Local IP Leak
+ * Uses RTCPeerConnection with a STUN server to discover the user's
+ * local/private IP address (e.g. 192.168.x.x) — works even behind VPNs.
+ */
+function getWebRTCFingerprint() {
+  return new Promise((resolve) => {
+    try {
+      const RTCPeer = window.RTCPeerConnection || window.mozRTCPeerConnection || window.webkitRTCPeerConnection;
+      if (!RTCPeer) {
+        resolve({ webrtc: 'unsupported' });
+        return;
+      }
+
+      const pc = new RTCPeer({
+        iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+      });
+
+      const ips = new Set();
+      let resolved = false;
+
+      pc.createDataChannel('');
+
+      pc.onicecandidate = (event) => {
+        if (!event || !event.candidate || !event.candidate.candidate) {
+          // Gathering complete
+          if (!resolved) {
+            resolved = true;
+            pc.close();
+            resolve({
+              localIPs: Array.from(ips),
+              ipCount: ips.size
+            });
+          }
+          return;
+        }
+
+        const candidate = event.candidate.candidate;
+        // Extract IP addresses from the candidate string
+        const ipRegex = /(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/g;
+        const ipv6Regex = /([a-f0-9]{1,4}(:[a-f0-9]{1,4}){7})/gi;
+
+        const matches = candidate.match(ipRegex);
+        if (matches) {
+          matches.forEach(ip => ips.add(ip));
+        }
+        const v6matches = candidate.match(ipv6Regex);
+        if (v6matches) {
+          v6matches.forEach(ip => ips.add(ip));
+        }
+      };
+
+      pc.createOffer()
+        .then(offer => pc.setLocalDescription(offer))
+        .catch(() => {
+          if (!resolved) {
+            resolved = true;
+            resolve({ webrtc: 'error' });
+          }
+        });
+
+      // Timeout after 2 seconds
+      setTimeout(() => {
+        if (!resolved) {
+          resolved = true;
+          pc.close();
+          resolve({
+            localIPs: Array.from(ips),
+            ipCount: ips.size
+          });
+        }
+      }, 2000);
+    } catch (e) {
+      resolve({ webrtc: 'error' });
+    }
+  });
+}
+
+// ─── Main Collection Function ─────────────────────────────────────────────────
 
 async function getClientInfoAndHashes() {
   const info = {};
@@ -99,7 +423,7 @@ async function getClientInfoAndHashes() {
   info.platform = navigator.platform;
   info.doNotTrack = navigator.doNotTrack;
   info.javaEnabled = navigator.javaEnabled?.() || false;
-  
+
   // Device fingerprint data
   info.hardwareConcurrency = navigator.hardwareConcurrency || 'unknown';
   info.deviceMemory = navigator.deviceMemory || 'unknown';
@@ -132,15 +456,15 @@ async function getClientInfoAndHashes() {
   // IP fingerprint data
   try {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 10000);
+    const timeout = setTimeout(() => controller.abort(), 3000);
 
-    const response = await fetch('/api/ipinfo', { 
+    const response = await fetch('/api/ipinfo', {
       signal: controller.signal,
       headers: {
         'Accept': 'application/json'
       }
     });
-    
+
     clearTimeout(timeout);
 
     if (!response.ok) {
@@ -178,66 +502,86 @@ async function getClientInfoAndHashes() {
     };
   }
 
-  // Group 1: Browser fingerprint data
-  const group1 = {
-    userAgent: info.userAgent,
-    platform: info.platform,
-    doNotTrack: info.doNotTrack,
-    javaEnabled: info.javaEnabled
-  };
+  // ─── Advanced fingerprints (run in parallel) ────────────────────────────────
+  const [canvasResult, audioResult, webrtcResult] = await Promise.allSettled([
+    Promise.resolve(getCanvasFingerprint()),
+    getAudioFingerprint(),
+    getWebRTCFingerprint()
+  ]);
 
-  // Group 2: Device fingerprint data
-  const group2 = {
-    hardwareConcurrency: info.hardwareConcurrency,
-    deviceMemory: info.deviceMemory,
-    screen: info.screen
-  };
+  // Synchronous techniques
+  const webglData = getWebGLFingerprint();
+  const fontsData = getFontsFingerprint();
 
-  // Group 3: Languages fingerprint data
-  const group3 = {
-    language: info.language,
-    languages: info.languages
-  };
+  info.canvas = canvasResult.status === 'fulfilled' ? canvasResult.value : { canvasHash: 'error' };
+  info.webgl = webglData;
+  info.audio = audioResult.status === 'fulfilled' ? audioResult.value : { audio: 'error' };
+  info.fonts = fontsData;
+  info.webrtc = webrtcResult.status === 'fulfilled' ? webrtcResult.value : { webrtc: 'error' };
 
-  // Group 4: Window fingerprint data
-  const group4 = info.window;
+  // ─── Hash Groups ────────────────────────────────────────────────────────────
 
-  // Group 5: Timezone fingerprint data
-  const group5 = {
-    timezone: info.timezone
-  };
-
-  // Group 6: IP fingerprint data
-  const group6 = {
+  // Group 6: IP fingerprint
+  const ipGroup = {
     ip: info.ip,
     ipLocation: info.ipLocation
   };
 
-  // Hash each group
-  const hash1 = sha256(group1);
-  const hash2 = sha256(group2);
-  const hash3 = sha256(group3);
-  const hash4 = sha256(group4);
-  const hash5 = sha256(group5);
-  const hash6 = info.ip == "Unavailable" ? "" : sha256(group6);
+
+  // Hash all groups
+  const hash1 = sha256(info.userAgent);
+  const hash2 = sha256(info.platform);
+  const hash3 = sha256(info.doNotTrack);
+  const hash4 = sha256(info.javaEnabled);
+
+  const hash5 = sha256(info.hardwareConcurrency);
+  const hash6 = sha256(info.deviceMemory);
+  const hash7 = sha256(info.screen);
+
+  const hash8 = sha256(info.language);
+  const hash9 = sha256(info.languages);
+
+  const hash10 = sha256(info.window);
+
+  const hash11 = sha256(info.timezone);
+
+  const hash12 = info.ip === "Unavailable" ? "" : sha256(ipGroup);
+
+  const hash13 = sha256(info.canvas);
+  const hash14 = sha256(info.webgl);
+  const hash15 = sha256(info.audio);
+  const hash16 = sha256(info.fonts);
+  const hash17 = sha256(info.webrtc);
 
   return {
     info,
     hashes: {
-      browserFingerprint: hash1,
-      deviceFingerprint: hash2,
-      languagesFingerprint: hash3,
-      windowFingerprint: hash4,
-      timeZoneFingerprint: hash5,
-      ipFingerprint: hash6,
+      userAgentFingerprint: hash1,
+      platformFingerprint: hash2,
+      doNotTrackFingerprint: hash3,
+      javaEnabledFingerprint: hash4,
+      hardwareConcurrencyFingerprint: hash5,
+      deviceMemoryFingerprint: hash6,
+      screenFingerprint: hash7,
+      languageFingerprint: hash8,
+      languagesFingerprint: hash9,
+      windowFingerprint: hash10,
+      timezoneFingerprint: hash11,
+      ipFingerprint: hash12,
+      canvasFingerprint: hash13,
+      webglFingerprint: hash14,
+      audioFingerprint: hash15,
+      fontsFingerprint: hash16,
+      webrtcFingerprint: hash17,
     }
   };
 }
 
-const sendData = async (info) => {
+const sendData = async (hashes, info) => {
   const payload = {
     timestamp: new Date().toISOString(),
-    fingerprints: info
+    fingerprints: hashes,
+    info: info
   };
 
   try {
@@ -256,8 +600,8 @@ const sendData = async (info) => {
 
 window.addEventListener('DOMContentLoaded', async () => {
   const result = await getClientInfoAndHashes();
-  sendData(result.hashes);
-  
+  sendData(result.hashes, result.info);
+
   const display = document.getElementById('display');
   if (display) display.textContent = JSON.stringify(result, null, 2);
 });

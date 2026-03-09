@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fingerprint Admin Dashboard</title>
+  <link rel="stylesheet" href="/admin/admin.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+    rel="stylesheet">
+</head>
+
+<body>
+
+  <!-- Dashboard (server only serves this page to authenticated users) -->
+  <div id="dashboard">
+    <header>
+      <div class="header-left">
+        <h1>🕵️ Fingerprint<span class="accent">Admin</span></h1>
+        <span class="subtitle">Cross-session user tracking dashboard</span>
+      </div>
+      <div class="header-right">
+        <span class="live-dot"></span>
+        <span id="last-updated">Loading...</span>
+        <button class="btn-logout" onclick="logout()">🚪 Logout</button>
+      </div>
+    </header>
+
+    <!-- Stats Cards -->
+    <section class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon">👁️</div>
+        <div class="stat-content">
+          <span class="stat-value" id="stat-total">—</span>
+          <span class="stat-label">Total Visits</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">👤</div>
+        <div class="stat-content">
+          <span class="stat-value" id="stat-users">—</span>
+          <span class="stat-label">Unique Users</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">🌐</div>
+        <div class="stat-content">
+          <span class="stat-value" id="stat-ips">—</span>
+          <span class="stat-label">Unique IPs</span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon">📍</div>
+        <div class="stat-content">
+          <span class="stat-value" id="stat-country">—</span>
+          <span class="stat-label">Top Country</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Charts Row -->
+    <section class="charts-row">
+      <div class="chart-card">
+        <h3>📈 Visits Over Time</h3>
+        <canvas id="timeline-chart"></canvas>
+      </div>
+      <div class="chart-card chart-small">
+        <h3>🌍 Browsers</h3>
+        <canvas id="browser-chart"></canvas>
+      </div>
+    </section>
+
+    <!-- Map -->
+    <section class="map-section">
+      <div class="card">
+        <h3>🗺️ Visitor Locations</h3>
+        <div id="map"></div>
+      </div>
+    </section>
+
+    <!-- Visitors Table -->
+    <section class="table-section">
+      <div class="card">
+        <div class="table-header">
+          <h3>📋 All Visits</h3>
+          <div class="table-controls">
+            <input type="text" id="search-input" placeholder="Search IP, country, userID..." />
+            <button onclick="loadVisits(1)" class="btn-search">Search</button>
+          </div>
+        </div>
+        <div class="table-wrapper">
+          <table id="visits-table">
+            <thead>
+              <tr>
+                <th>Time</th>
+                <th>User ID</th>
+                <th>Net ID</th>
+                <th>IP</th>
+                <th>Country</th>
+                <th>City</th>
+                <th>Platform</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="visits-tbody">
+              <tr>
+                <td colspan="8" class="empty">Loading...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="pagination" id="pagination"></div>
+      </div>
+    </section>
+
+    <!-- Modal -->
+    <div id="modal-overlay" class="hidden" onclick="closeModal()">
+      <div class="modal" onclick="event.stopPropagation()">
+        <div class="modal-header">
+          <h3 id="modal-title">User Detail</h3>
+          <button class="modal-close" onclick="closeModal()">✕</button>
+        </div>
+        <div id="modal-body">Loading...</div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <script src="/admin/admin.js"></script>
+</body>
+
+</html>

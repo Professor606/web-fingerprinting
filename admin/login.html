@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login — Fingerprint Dashboard</title>
+    <link rel="stylesheet" href="/admin/admin.css">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+</head>
+
+<body>
+
+    <!-- Auth Gate (Login Only) -->
+    <div id="auth-gate">
+        <div class="auth-card">
+            <div class="auth-icon">🔐</div>
+            <h2>Admin Access</h2>
+            <input type="password" id="admin-key-input" placeholder="Enter admin key..." autocomplete="off">
+            <button id="auth-btn" onclick="authenticate()">Unlock Dashboard</button>
+            <p id="auth-error" class="hidden">Invalid key</p>
+        </div>
+    </div>
+
+    <script>
+        function authenticate() {
+            const input = document.getElementById('admin-key-input');
+            const key = input.value.trim();
+            if (!key) return;
+
+            fetch('/api/admin/login', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ key }),
+            })
+                .then(r => {
+                    if (!r.ok) throw new Error('Unauthorized');
+                    return r.json();
+                })
+                .then(data => {
+                    // Store token in localStorage for API calls
+                    localStorage.setItem('admin_token', data.token);
+                    // Redirect — the server will now see the cookie and serve the dashboard
+                    window.location.href = '/admin';
+                })
+                .catch(() => {
+                    document.getElementById('auth-error').classList.remove('hidden');
+                    input.value = '';
+                    input.focus();
+                });
+        }
+
+        // Enter key support
+        document.getElementById('admin-key-input').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') authenticate();
+        });
+    </script>
+
+</body>
+
+</html>

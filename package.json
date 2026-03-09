@@ -1,14 +1,17 @@
 {
   "name": "user-fingerprint",
   "version": "1.0.0",
-  "main": "serve.js",
+  "main": "server.js",
   "scripts": {
     "dev": "nodemon server.js",
     "start": "node server.js"
   },
   "dependencies": {
+    "cookie-parser": "^1.4.7",
     "dotenv": "^17.2.1",
     "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.3",
+    "mongoose": "^9.2.4",
     "node-fetch": "^2.7.0"
   },
   "devDependencies": {

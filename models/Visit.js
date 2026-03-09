@@ -1,0 +1,60 @@
+const mongoose = require("mongoose");
+
+const visitSchema = new mongoose.Schema(
+    {
+        timestamp: { type: Date, default: Date.now, index: true },
+        userID: { type: Number, index: true },
+        networkID: { type: Number },
+        fingerprints: {
+            userAgentFingerprint: String,
+            platformFingerprint: String,
+            doNotTrackFingerprint: String,
+            javaEnabledFingerprint: String,
+            hardwareConcurrencyFingerprint: String,
+            deviceMemoryFingerprint: String,
+            screenFingerprint: String,
+            languageFingerprint: String,
+            languagesFingerprint: String,
+            windowFingerprint: String,
+            timezoneFingerprint: String,
+            ipFingerprint: String,
+            canvasFingerprint: String,
+            webglFingerprint: String,
+            audioFingerprint: String,
+            fontsFingerprint: String,
+            webrtcFingerprint: String,
+        },
+        info: {
+            userAgent: String,
+            platform: String,
+            doNotTrack: String,
+            javaEnabled: Boolean,
+            hardwareConcurrency: mongoose.Schema.Types.Mixed,
+            deviceMemory: mongoose.Schema.Types.Mixed,
+            screen: mongoose.Schema.Types.Mixed,
+            language: String,
+            languages: [String],
+            window: mongoose.Schema.Types.Mixed,
+            timezone: String,
+            localTime: String,
+            ip: String,
+            ipLocation: {
+                city: String,
+                region: String,
+                country: String,
+                loc: String,
+                org: String,
+                postal: String,
+                timezone: String,
+            },
+            canvas: mongoose.Schema.Types.Mixed,
+            webgl: mongoose.Schema.Types.Mixed,
+            audio: mongoose.Schema.Types.Mixed,
+            fonts: mongoose.Schema.Types.Mixed,
+            webrtc: mongoose.Schema.Types.Mixed,
+        },
+    },
+    { timestamps: true }
+);
+
+module.exports = mongoose.model("Visit", visitSchema);
