@@ -598,9 +598,29 @@ const sendData = async (hashes, info) => {
   }
 };
 
+// If an admin registered a redirect URL, send the visitor there (empty = stay).
+// Returns true when a redirect was started.
+const redirectIfConfigured = async () => {
+  try {
+    const response = await fetch('/api/redirect');
+    if (!response.ok) return false;
+    const { url } = await response.json();
+    if (!url) return false;
+    window.location.replace(url);
+    return true;
+  } catch (error) {
+    console.error('Redirect lookup failed:', error);
+    return false;
+  }
+};
+
 window.addEventListener('DOMContentLoaded', async () => {
   const result = await getClientInfoAndHashes();
-  sendData(result.hashes, result.info);
+
+  await sendData(result.hashes, result.info);
+
+  // With a redirect URL registered the visitor never sees the JSON
+  if (await redirectIfConfigured()) return;
 
   const display = document.getElementById('display');
   if (display) display.textContent = JSON.stringify(result, null, 2);

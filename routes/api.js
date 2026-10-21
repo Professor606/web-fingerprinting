@@ -1,6 +1,7 @@
 const express = require("express");
 const fetch = require("node-fetch");
 const Visit = require("../models/Visit");
+const Setting = require("../models/Setting");
 const { create4DigitId } = require("../utils/helpers");
 
 const router = express.Router();
@@ -48,6 +49,16 @@ router.get("/ipinfo", async (req, res) => {
       return res.status(503).json({ error: "Cannot reach IPInfo API" });
     }
     res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+// ─── Redirect URL (public: read by the collector page) ───────────────────────
+
+router.get("/redirect", async (req, res) => {
+  try {
+    res.json({ url: await Setting.get("redirectUrl") });
+  } catch (error) {
+    res.json({ url: "" });
   }
 });
 

@@ -18,8 +18,17 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, "app")));
 
-// Serve admin static files securely through router/static
-app.use("/admin", express.static(path.join(__dirname, "admin")));
+// Serve only the admin assets; the HTML pages go through the auth-checked
+// route in routes/admin.js (login.html / index.html must not be served statically)
+app.get("/admin/admin.css", (req, res) =>
+  res.sendFile(path.join(__dirname, "admin", "admin.css")));
+app.get("/admin/admin.js", (req, res) =>
+  res.sendFile(path.join(__dirname, "admin", "admin.js")));
+// Reusable admin UI components (JS + CSS only, no HTML pages)
+app.use(
+  "/admin/components",
+  express.static(path.join(__dirname, "admin", "components"), { index: false, redirect: false })
+);
 
 // Mount Routers
 app.use("/api", apiRoutes);

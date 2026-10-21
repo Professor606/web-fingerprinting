@@ -1,6 +1,9 @@
 // ─── State ─────────────────────────────────────────────────────────────────
 let authToken = localStorage.getItem('admin_token') || '';
 let map = null;
+let tileLayer = null;
+let cartoKey = '';
+let mapProvider = 'carto';
 let timelineChart = null;
 let browserChart = null;
 let currentPage = 1;
@@ -12,17 +15,53 @@ function logout() {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+    initUserMenu();
     initDashboard();
 });
 
+// ─── Header menu & redirect URL ────────────────────────────────────────────
+function initUserMenu() {
+    const urlModal = new UrlModal({
+        onSave: async (url) => {
+            await api('/api/admin/redirect-url', { method: 'PUT', body: { url } });
+        },
+    });
+
+    new UserMenu(document.getElementById('user-menu'), {
+        label: '☰ Menu',
+        items: [
+            {
+                label: '🔗 Cadastrar URL',
+                onClick: async () => {
+                    let current = '';
+                    try {
+                        ({ url: current } = await api('/api/admin/redirect-url'));
+                    } catch (err) {
+                        console.error('Redirect URL error:', err);
+                    }
+                    urlModal.open(current);
+                },
+            },
+            { label: '🚪 Logout', variant: 'danger', onClick: logout },
+        ],
+    });
+}
+
 
 // ─── API Helper ────────────────────────────────────────────────────────────
-function api(path) {
+function api(path, { method = 'GET', body } = {}) {
+    const headers = { 'Authorization': `Bearer ${authToken}` };
+    if (body !== undefined) headers['Content-Type'] = 'application/json';
+
     return fetch(path, {
-        headers: { 'Authorization': `Bearer ${authToken}` },
-    }).then(r => {
+        method,
+        headers,
+        body: body !== undefined ? JSON.stringify(body) : undefined,
+    }).then(async r => {
         if (r.status === 401) { logout(); throw new Error('Session expired'); }
-        return r.json();
+        const data = await r.json();
+        if (!r.ok) throw new Error(data.error || `HTTP error ${r.status}`);
+        return data;
     });
 }
 
@@ -166,6 +205,28 @@ async function loadTimeline() {
 }
 
 // ─── Map ───────────────────────────────────────────────────────────────────
+function setMapProvider(provider) {
+    if (!map) return;
+    if (provider === 'carto' && !cartoKey) provider = 'osm';
+    mapProvider = provider;
+
+    if (tileLayer) map.removeLayer(tileLayer);
+    tileLayer = provider === 'carto'
+        ? L.tileLayer(`https://basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}{r}.png?key=${encodeURIComponent(cartoKey)}`, {
+            attribution: '&copy; <a href="https://carto.com/attributions">CARTO</a> &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+            maxZoom: 19
+        })
+        : L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+            className: 'map-tiles-dark',
+            maxZoom: 19
+        });
+    tileLayer.addTo(map);
+
+    document.getElementById('map-btn-carto').classList.toggle('active', provider === 'carto');
+    document.getElementById('map-btn-osm').classList.toggle('active', provider === 'osm');
+}
+
 async function loadMap() {
     try {
         if (!map) {
@@ -175,11 +236,14 @@ async function loadMap() {
                 zoomControl: true,
             });
 
-            L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-                attribution: '&copy; CartoDB',
-                subdomains: 'abcd',
-                maxZoom: 19
-            }).addTo(map);
+            try {
+                const config = await api('/api/admin/config');
+                cartoKey = config.cartoKey || '';
+            } catch (e) {
+                console.error('Map config error:', e);
+            }
+            // Carto is the default; without a key only OpenStreetMap is available
+            setMapProvider(cartoKey ? 'carto' : 'osm');
         }
 
         const locations = await api('/api/admin/locations');

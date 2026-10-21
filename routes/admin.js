@@ -2,7 +2,9 @@ const express = require("express");
 const path = require("path");
 const jwt = require("jsonwebtoken");
 const Visit = require("../models/Visit");
+const Setting = require("../models/Setting");
 const adminAuth = require("../middleware/auth");
+const { normalizeRedirectUrl } = require("../utils/helpers");
 
 const router = express.Router();
 
@@ -56,6 +58,32 @@ router.get("/admin", (req, res) => {
 });
 
 // ─── Admin API Routes ─────────────────────────────────────────────────────────
+
+// Public map config for the dashboard (behind auth, so the key isn't in the static JS)
+router.get("/api/admin/config", adminAuth, (req, res) => {
+  res.json({ cartoKey: process.env.CARTO_KEY || "" });
+});
+
+// Redirect URL: where visitors are sent after their data is collected
+router.get("/api/admin/redirect-url", adminAuth, async (req, res) => {
+  try {
+    res.json({ url: await Setting.get("redirectUrl") });
+  } catch (error) {
+    res.status(500).json({ error: "Failed to fetch redirect URL" });
+  }
+});
+
+router.put("/api/admin/redirect-url", adminAuth, async (req, res) => {
+  const result = normalizeRedirectUrl(req.body && req.body.url);
+  if (!result.ok) return res.status(400).json({ error: result.error });
+
+  try {
+    await Setting.set("redirectUrl", result.url);
+    res.json({ url: result.url });
+  } catch (error) {
+    res.status(500).json({ error: "Failed to save redirect URL" });
+  }
+});
 
 // Stats overview
 router.get("/api/admin/stats", adminAuth, async (req, res) => {

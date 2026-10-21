@@ -1,0 +1,119 @@
+.url-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(8px);
+  z-index: 1100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.url-modal-overlay.hidden {
+  display: none;
+}
+
+.url-modal {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  width: 92%;
+  max-width: 480px;
+  box-shadow: 0 8px 48px rgba(0, 0, 0, 0.6), 0 0 40px var(--accent-glow);
+}
+
+.url-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.url-modal-header h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.url-modal-close {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.url-modal-close:hover {
+  color: var(--text-primary);
+}
+
+.url-modal-body {
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.url-modal-hint {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+
+.url-modal-input {
+  width: 100%;
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: 0.6rem 0.8rem;
+  font-size: 0.9rem;
+  font-family: var(--font-mono);
+}
+
+.url-modal-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.url-modal-error {
+  font-size: 0.8rem;
+  color: var(--danger);
+}
+
+.url-modal-error.hidden {
+  display: none;
+}
+
+.url-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+}
+
+.url-modal-btn {
+  border-radius: 6px;
+  padding: 0.5rem 1rem;
+  font-size: 0.85rem;
+  font-family: Inter, sans-serif;
+  cursor: pointer;
+  border: 1px solid var(--border);
+}
+
+.url-modal-btn.secondary {
+  background: transparent;
+  color: var(--text-secondary);
+}
+
+.url-modal-btn.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.url-modal-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

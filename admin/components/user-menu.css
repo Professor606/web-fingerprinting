@@ -1,0 +1,81 @@
+.user-menu {
+  position: relative;
+  margin-left: 1rem;
+}
+
+.user-menu-trigger {
+  background: rgba(108, 92, 231, 0.15);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  padding: 0.4rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-family: Inter, sans-serif;
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+
+.user-menu-trigger:hover {
+  background: rgba(108, 92, 231, 0.3);
+}
+
+.user-menu-list {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  min-width: 180px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow);
+  padding: 0.3rem;
+  z-index: 900;
+}
+
+.user-menu-list.hidden {
+  display: none;
+}
+
+.user-menu-item {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  color: var(--text-primary);
+  border: none;
+  border-radius: 6px;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.85rem;
+  font-family: Inter, sans-serif;
+  cursor: pointer;
+}
+
+.user-menu-item:hover {
+  background: var(--bg-card-hover);
+}
+
+/* Logout sits below the other items, separated by a line */
+.user-menu-item.danger {
+  color: #fd79a8;
+  margin-top: 0.3rem;
+  border-top: 1px solid var(--border);
+  border-radius: 0 0 6px 6px;
+}
+
+@media (max-width: 768px) {
+  .user-menu {
+    margin-left: 0.5rem;
+  }
+
+  .user-menu-trigger {
+    padding: 0.35rem 0.8rem;
+    font-size: 0.8rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .user-menu {
+    margin-left: 0;
+  }
+}

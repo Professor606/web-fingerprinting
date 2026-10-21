@@ -1,0 +1,26 @@
+services:
+  app:
+    build: .
+    ports:
+      # Só acessível a partir da sua máquina
+      - "127.0.0.1:${PORT:-3000}:3000"
+    environment:
+      PORT: 3000
+      MONGO_URI: mongodb://mongo:27017/fingerprint
+      IPINFO_TOKEN: ${IPINFO_TOKEN:?defina IPINFO_TOKEN no .env}
+      ADMIN_KEY: ${ADMIN_KEY:?defina ADMIN_KEY no .env}
+      JWT_SECRET: ${JWT_SECRET:?defina JWT_SECRET no .env}
+      CARTO_KEY: ${CARTO_KEY:-}
+    depends_on:
+      - mongo
+    restart: unless-stopped
+
+  mongo:
+    image: mongo:7
+    volumes:
+      - mongo_data:/data/db
+    restart: unless-stopped
+    # Sem "ports": o banco fica acessível só pela rede interna do compose
+
+volumes:
+  mongo_data:
